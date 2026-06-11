@@ -1,5 +1,3 @@
-
-<!--- Ensure the output folder exists before calling the utility --->
 <cfset outputDir = expandPath("./output") />
 <cfif NOT directoryExists(outputDir)>
     <cfdirectory action="create" directory="#outputDir#" />
@@ -7,53 +5,69 @@
 
 <cfset pdfUtil = new PDFUtility() />
 
+<html>
+<head>
+    <title>PDF Signature Utility</title>
+</head>
+<body>
 
-<!--- ============================================================
-    Example 1 — addSignatureLine()
-    Stamps the signature template onto the bottom-right of the last page.
-============================================================ --->
-<cftry>
-    <cfset mergedPDF = pdfUtil.addSignatureLine(
-        PDFPath          = "D:\PDF-Utility\sample.pdf",
-        SignaturePDFPath = "D:\PDF-Utility\blank_signed.pdf",
-        SaveToFolder     = outputDir
-    ) />
-    <cfoutput>Stamped PDF created: #mergedPDF#<br></cfoutput>
+<h2>PDF Signature Utility</h2>
 
-    <cfcatch type="PDFUtility.InvalidArgument">
-        <cfoutput>Validation error: #cfcatch.message# — #cfcatch.detail#<br></cfoutput>
-    </cfcatch>
-    <cfcatch type="PDFUtility.ProcessingError">
-        <cfoutput>Processing error: #cfcatch.message# — #cfcatch.detail#<br></cfoutput>
-    </cfcatch>
-    <cfcatch type="PDFUtility.WriteError">
-        <cfoutput>Write error: #cfcatch.message# — #cfcatch.detail#<br></cfoutput>
-    </cfcatch>
-</cftry>
+<form method="post">
 
+    <label>Signer Name:</label><br>
+    <input
+        type="text"
+        name="signatureText"
+        value="<cfoutput>#encodeForHTML(form.signatureText ?: '')#</cfoutput>"
+        required
+        style="width:300px;"
+    >
+    <br><br>
 
-<!--- ============================================================
-    Example 2 — addSignatureText()
-    Overlays signer name and today's date just below the signature image.
-    Pass the same SignaturePDFPath so the method can compute the placement.
-============================================================ --->
-<cftry>
-    <cfset signedPDF = pdfUtil.addSignatureText(
-        PDFPath          = "#mergedPDF#",
-        SignaturePDFPath = "D:\PDF-Utility\blank_signed.pdf",
-        SignatureText    = "K.M",
-        SaveToFolder     = outputDir
-    ) />
-    <cfoutput>Signed PDF created: #signedPDF#<br></cfoutput>
+    <input type="submit" name="generatePDF" value="Generate PDF">
 
-    <cfcatch type="PDFUtility.InvalidArgument">
-        <cfoutput>Validation error: #cfcatch.message# — #cfcatch.detail#<br></cfoutput>
-    </cfcatch>
-    <cfcatch type="PDFUtility.ProcessingError">
-        <cfoutput>Processing error: #cfcatch.message# — #cfcatch.detail#<br></cfoutput>
-    </cfcatch>
-    <cfcatch type="PDFUtility.WriteError">
-        <cfoutput>Write error: #cfcatch.message# — #cfcatch.detail#<br></cfoutput>
-    </cfcatch>
-</cftry>
+</form>
 
+<hr>
+
+<cfif structKeyExists(form, "generatePDF")>
+
+    <cftry>
+
+        <!--- Step 1: Append signature line --->
+        <cfset mergedPDF = pdfUtil.addSignatureLine(
+            PDFPath          = "D:\PDF-Utility\sample-local-pdf.pdf",
+            SignaturePDFPath = "D:\PDF-Utility\signature_line.pdf",
+            SaveToFolder     = outputDir
+        ) />
+
+        <!--- Step 2: Add signer name --->
+        <cfset signedPDF = pdfUtil.addSignatureText(
+            PDFPath       = mergedPDF,
+            SignatureText = trim(form.signatureText),
+            SaveToFolder  = outputDir
+        ) />
+
+        <cfoutput>
+            <h3>PDF Generated Successfully</h3>
+
+            Generated File:<br>
+            #signedPDF#
+        </cfoutput>
+
+        <cfcatch type="any">
+            <cfoutput>
+                <div style="color:red;">
+                    Error: #cfcatch.message#<br>
+                    #cfcatch.detail#
+                </div>
+            </cfoutput>
+        </cfcatch>
+
+    </cftry>
+
+</cfif>
+
+</body>
+</html>

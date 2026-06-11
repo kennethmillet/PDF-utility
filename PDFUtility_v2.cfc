@@ -383,7 +383,7 @@
                     javaCast("float", signatureX),
                     javaCast("float", signatureY)
                 ) />
-                <cfset cs.showText(arguments.SignatureText) />
+                <cfset cs.showText(': '&arguments.SignatureText) />
                 <cfset cs.endText() />
 
                 <!--- Date --->
@@ -393,7 +393,7 @@
                     javaCast("float", dateX),
                     javaCast("float", dateY)
                 ) />
-                <cfset cs.showText(currentDate) />
+                <cfset cs.showText(': '&currentDate) />
                 <cfset cs.endText() />
 
                 <cfcatch type="any">
