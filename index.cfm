@@ -1,6 +1,12 @@
+<!--- Ensure the output folder exists before calling the utility --->
 <cfset outputDir = expandPath("./output") />
 <cfif NOT directoryExists(outputDir)>
     <cfdirectory action="create" directory="#outputDir#" />
+</cfif>
+<!--- Ensure the upload folder exists --->
+<cfset uploadDir = expandPath("./uploads") />
+<cfif NOT directoryExists(uploadDir)>
+    <cfdirectory action="create" directory="#uploadDir#" />
 </cfif>
 
 <cfset pdfUtil = new PDFUtility() />
@@ -13,19 +19,21 @@
 
 <h2>PDF Signature Utility</h2>
 
-<form method="post">
+<form method="post" enctype="multipart/form-data">
 
-    <label>Signer Name:</label><br>
-    <input
-        type="text"
-        name="signatureText"
-        value="<cfoutput>#encodeForHTML(form.signatureText ?: '')#</cfoutput>"
-        required
-        style="width:300px;"
-    >
-    <br><br>
+    <p>
+        <label>Select PDF:</label>  <br>
+        <input type="file" name="pdfFile" accept=".pdf" required>
+    </p>
 
-    <input type="submit" name="generatePDF" value="Generate PDF">
+    <p>
+        <label>Signer Name:</label> <br>
+        <input type="text" name="signatureText" required style="width:300px;">
+    </p>
+
+    <p>
+        <input type="submit" name="generatePDF" value="Generate Signed PDF">
+    </p>
 
 </form>
 
@@ -35,14 +43,24 @@
 
     <cftry>
 
-        <!--- Step 1: Append signature line --->
+        <!--- Upload PDF --->
+        <cffile
+            action="upload"
+            fileField="pdfFile"
+            destination="#uploadDir#"
+            nameConflict="makeunique"
+            accept="application/pdf">
+
+        <cfset uploadedPDF = cffile.serverDirectory & "\" & cffile.serverFile />
+
+        <!--- Append signature block --->
         <cfset mergedPDF = pdfUtil.addSignatureLine(
-            PDFPath          = "D:\PDF-Utility\sample-local-pdf.pdf",
+            PDFPath          = uploadedPDF,
             SignaturePDFPath = "D:\PDF-Utility\signature_line.pdf",
             SaveToFolder     = outputDir
         ) />
 
-        <!--- Step 2: Add signer name --->
+        <!--- Add signature text --->
         <cfset signedPDF = pdfUtil.addSignatureText(
             PDFPath       = mergedPDF,
             SignatureText = trim(form.signatureText),
@@ -52,14 +70,18 @@
         <cfoutput>
             <h3>PDF Generated Successfully</h3>
 
-            Generated File:<br>
+            Original File:<br>
+            #uploadedPDF#<br><br>
+
+            Signed File:<br>
             #signedPDF#
         </cfoutput>
 
         <cfcatch type="any">
             <cfoutput>
                 <div style="color:red;">
-                    Error: #cfcatch.message#<br>
+                    <strong>Error:</strong><br>
+                    #cfcatch.message#<br>
                     #cfcatch.detail#
                 </div>
             </cfoutput>
